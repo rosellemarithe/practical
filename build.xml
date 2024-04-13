@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<project name="prefect-office-record-management-system" default="build" xmlns:ivy = "antlib:org.apache.ivy.ant">
+
+    <!--Build properties -->
+    <property name="src.dir" location="src/main/java"/>
+    <property name="test.src.dir" location="src/test/java"/>
+    <property name="build.dir" location="build"/>
+    <property name="classes.dir" location="${build.dir}/classes"/>
+    <property name="doc.dir" location="${build.dir}/doc"/>
+    <property name="test.classes.dir" location="${build.dir}/test-classes"/>
+    <property name="ivy.reports.dir"  location="${build.dir}/ivy-reports"/>
+    <property name="test.reports.dir"  location="${build.dir}/test-reports"/>
+    <property file="build.properties" location="build.properties"/>
+
+    <!-- Clean -->
+    <target name="clean" description="remove build directory">
+        <delete includeemptydirs="true">
+            <fileset dir="." includes="${clean.dirs}"/>
+        </delete>
+    </target>
+
+    <!--Initialize build process-->
+    <target name="init" depends="clean" description="resolve dependencies">
+        <ivy:resolve/>
+        <ivy:report todir='${ivy.reports.dir}' graph='false' xml='false'/>
+        <ivy:cachepath pathid="compile.path" conf="compile"/>
+        <ivy:cachepath pathid="runtime.path" conf="runtime"/>
+        <ivy:cachepath pathid="test.path"    conf="test"/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${test.classes.dir}"/>
+        <mkdir dir="${test.reports.dir}"/>
+    </target>
+
+    <!--Compile-->
+    <target name="compile" depends="init">
+        <javac srcdir="${src.dir}" destdir="${classes.dir}"
+               includeantruntime="false" debug="true" classpathref="compile.path"/>
+    </target>
+
+    <target name="compile-tests" depends="compile">
+        <javac srcdir="${test.src.dir}" destdir="${test.classes.dir}" includeantruntime="false" debug="true">
+            <classpath>
+                <path refid="test.path"/>
+                <pathelement path="${classes.dir}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <path id="junit.libs">
+        <fileset dir="${ant.home}/lib/junit"/>
+    </path>
+
+    <!--Run unit tests-->
+    <target name="test" depends="compile-tests">
+        <junitlauncher haltOnFailure="false" printSummary="true">
+            <classpath>
+                <path refid="test.path"/>
+                <path refid="junit.libs"/>
+                <pathelement path="${classes.dir}"/>
+                <pathelement path="${test.classes.dir}"/>
+                <pathelement path="${test.reports.dir}"/>
+            </classpath>
+            <testclasses outputdir="${test.reports.dir}">
+                <fileset dir="${test.classes.dir}"/>
+                <listener type="legacy-brief" sendSysOut="true"/>
+                <listener type="legacy-xml" sendSysErr="true" sendSysOut="true"/>
+            </testclasses>
+        </junitlauncher>
+    </target>
+
+    <!-- Build   -->
+    <target name="build" depends="test"/>
+
+    <!-- Create jar   -->
+    <target name="build-jar" depends="build">
+        <jar destfile="${build.dir}/${ant.project.name}-${version}.jar"
+             basedir="${classes.dir}" />
+    </target>
+
+    <!-- Generate java documentation   -->
+    <target name="generate-javadoc">
+        <javadoc packagenames="com.prefect.office.record.management.*"
+                 sourcepath="${src.dir}"
+                 destdir="${doc.dir}"
+                 version="${version}"
+                 windowtitle="Prefect Office Record Management Application Documentation">
+            <fileset dir="."></fileset>
+            <doctitle><![CDATA[= Test Documentation =]]></doctitle>
+            <bottom>
+                <![CDATA[Copyright © ${copyright.year}. All Rights Reserved.]]>
+            </bottom>
+        </javadoc>
+        <echo message="java doc has been generated!" />
+    </target>
+</project>
